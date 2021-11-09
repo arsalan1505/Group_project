@@ -1,0 +1,54 @@
+service: team-1-project
+
+plugins:
+  - serverless-python-requirements
+
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
+    slim: true
+    layer: true
+
+provider:
+  name: aws
+  stage: dev
+  region: eu-west-1
+  runtime: python3.8
+  lambdaHashingVersion: 20201221
+  iam:
+    role: arn:aws:iam::064061412720:role/zaks_lambda_role
+
+
+package:
+  individually: false
+  include:
+    - src/**
+  exclude:
+    - "*"
+    - "*/**"
+
+functions:
+  etl:
+    handler: src/etl/handler.handle
+    layers: 
+      - { Ref: PythonRequirementsLambdaLayer }
+    timeout: 300
+    events:
+      - s3:
+          bucket: team-1-test-1234
+          event: s3:ObjectCreated:*
+          # existing: true
+          rules:
+            - suffix: .csv
+    vpc:
+      securityGroupIds:
+        - sg-0e8f1a26780e87b1d	
+      subnetIds:
+        - subnet-0b9c52a62dd33086b
+    environment:
+      DB_CLUSTER: "final-project-infrastructure-redshiftcluster-ba1ic72cchku"
+      DB_HOST: "172.31.76.168"
+      DB_NAME: "team1"
+      DB_PORT: "5439"
+      DB_USER: "awsuser"
